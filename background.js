@@ -1,5 +1,6 @@
 import { getOptions } from "./lib/options.js";
-import { pickTodoFolder } from "./lib/todo.js";
+import { pickTodoFolder, folderName } from "./lib/todo.js";
+import { addTask } from "./lib/rtm.js";
 
 const MENU_ID = "create-todo";
 
@@ -8,13 +9,22 @@ messenger.menus.removeAll().then(() =>
   messenger.menus.create({ id: MENU_ID, title: "Create ToDo", contexts: ["message_list"] }),
 );
 
-messenger.menus.onClicked.addListener(async (info) => {
+messenger.menus.onClicked.addListener((info) => {
   if (info.menuItemId !== MENU_ID) return;
-  try {
-    const messages = info.selectedMessages?.messages ?? [];
-    if (!messages.length) return;
+  const ids = (info.selectedMessages?.messages ?? []).map((message) => message.id);
+  if (!ids.length) return;
+  // The prompt carries the ids and posts them back with the task name; no state kept here.
+  openPopup("prompt/prompt.html", { ids: ids.join(",") }, 170);
+});
 
-    const { baseFolderId, tag } = await getOptions(messenger.storage.local);
+messenger.runtime.onMessage.addListener((request) => {
+  if (request?.type === "create-todo") createTodo(request.name, request.ids);
+});
+
+async function createTodo(name, ids) {
+  try {
+    const options = await getOptions(messenger.storage.local);
+    const { baseFolderId, tag } = options;
     if (!baseFolderId) {
       await notify("Set the base todo folder in the add-on options first.");
       return;
@@ -32,30 +42,51 @@ messenger.menus.onClicked.addListener(async (info) => {
     console.log("Manage ToDo Folders: subfolders", withCounts.map((f) => `${f.name}=${f.totalMessageCount}`).join(" "));
 
     const pick = pickTodoFolder(withCounts);
-    const target = pick.existing ?? (await messenger.folders.create(baseFolderId, pick.create));
+    const label = `${tag}${pick.number}`;
 
-    await messenger.messages.move(
-      messages.map((message) => message.id),
-      target.id,
-      { isUserAction: true },
-    );
+    // RTM parses the Smart Add syntax and returns the clean task name; without RTM the raw input is used.
+    let cleanName = name;
+    let rtmNote = "";
+    if (options.rtmToken) {
+      const creds = { apiKey: options.rtmApiKey, secret: options.rtmSecret, token: options.rtmToken };
+      ({ name: cleanName } = await addTask(
+        { name, listId: options.rtmListId, tag: label.replace(/^#/, "") },
+        creds,
+      ));
+      rtmNote = " - RTM task created";
+    }
 
-    const label = `${tag}${target.name}`;
+    const wanted = folderName(pick.number, cleanName);
+    let target;
+    if (!pick.existing) {
+      target = await messenger.folders.create(baseFolderId, wanted);
+    } else if (pick.existing.name === wanted) {
+      target = pick.existing;
+    } else {
+      target = await messenger.folders.rename(pick.existing.id, wanted);
+    }
+
+    await messenger.messages.move(ids, target.id, { isUserAction: true });
+
     await navigator.clipboard.writeText(label);
-    await notify(`Moved ${messages.length} message(s) to ${target.name} - copied ${label}`);
+    await notify(`Moved ${ids.length} message(s) to ${target.name} - copied ${label}${rtmNote}`);
   } catch (error) {
     console.error("Manage ToDo Folders:", error);
     await notify(`Create ToDo failed: ${error.message}`);
   }
-});
+}
 
-// Background pages have no window.alert(); a small popup window is the closest equivalent.
+// Background pages have no window.alert()/prompt(); small popup windows are the closest equivalent.
 function notify(message) {
+  return openPopup("alert/alert.html", { message }, 160);
+}
+
+function openPopup(page, params, height) {
   return messenger.windows.create({
     type: "popup",
-    url: `alert/alert.html?${new URLSearchParams({ message })}`,
+    url: `${page}?${new URLSearchParams(params)}`,
     width: 420,
-    height: 160,
+    height,
     allowScriptsToClose: true,
   });
 }

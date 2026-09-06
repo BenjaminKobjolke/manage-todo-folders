@@ -1,18 +1,30 @@
 import { getOptions } from "../lib/options.js";
 import { decodeImapUtf7 } from "../lib/imapUtf7.js";
+import { rtmCall, authUrl } from "../lib/rtm.js";
 
 const account = document.getElementById("account");
 const folderSearch = document.getElementById("folderSearch");
 const folderList = document.getElementById("folderList");
 const folderCurrent = document.getElementById("folderCurrent");
 const tag = document.getElementById("tag");
+const rtmApiKey = document.getElementById("rtmApiKey");
+const rtmSecret = document.getElementById("rtmSecret");
+const rtmConnect = document.getElementById("rtmConnect");
+const rtmFinish = document.getElementById("rtmFinish");
+const rtmDisconnect = document.getElementById("rtmDisconnect");
+const rtmStatus = document.getElementById("rtmStatus");
+const rtmList = document.getElementById("rtmList");
 
 let allFolders = [];
+// Frob from getFrob, valid until "Finish connection". Page memory only: reopening options restarts Connect.
+let frob = "";
 
 const labelOf = (folder) => decodeImapUtf7(folder.path ?? "");
+const options = () => getOptions(messenger.storage.local);
+const credsOf = (o) => ({ apiKey: o.rtmApiKey, secret: o.rtmSecret, token: o.rtmToken });
 
 async function save(patch) {
-  const current = await getOptions(messenger.storage.local);
+  const current = await options();
   await messenger.storage.local.set({ options: { ...current, ...patch } });
 }
 
@@ -37,11 +49,44 @@ function fillFolderList() {
   }
 }
 
+async function refreshRtm() {
+  const o = await options();
+  rtmFinish.hidden = !frob;
+  rtmDisconnect.hidden = !o.rtmToken;
+  rtmList.innerHTML = "";
+  if (!o.rtmToken) {
+    if (!frob) rtmStatus.textContent = "Not connected";
+    return;
+  }
+  rtmStatus.textContent = `Connected as ${o.rtmUser}`;
+  try {
+    const { lists } = await rtmCall("rtm.lists.getList", {}, credsOf(o));
+    // RTM JSON flags are the strings "0"/"1".
+    const usable = [].concat(lists.list).filter(
+      (l) => String(l.smart) !== "1" && String(l.archived) !== "1" && String(l.deleted) !== "1",
+    );
+    for (const l of usable) {
+      const option = document.createElement("option");
+      option.value = l.id;
+      option.textContent = l.name;
+      rtmList.appendChild(option);
+    }
+    const selected =
+      usable.find((l) => l.id === o.rtmListId) ?? usable.find((l) => l.name === "Inbox") ?? usable[0];
+    if (selected) {
+      rtmList.value = selected.id;
+      if (selected.id !== o.rtmListId) await save({ rtmListId: selected.id });
+    }
+  } catch (error) {
+    rtmStatus.textContent = error.message;
+  }
+}
+
 async function load() {
-  const [folders, accounts, options] = await Promise.all([
+  const [folders, accounts, o] = await Promise.all([
     messenger.folders.query({}),
     messenger.accounts.list(),
-    getOptions(messenger.storage.local),
+    options(),
   ]);
   allFolders = folders;
 
@@ -53,12 +98,16 @@ async function load() {
     account.appendChild(option);
   }
 
-  const current = allFolders.find((f) => f.id === options.baseFolderId);
+  const current = allFolders.find((f) => f.id === o.baseFolderId);
   account.value = current?.accountId ?? accounts[0]?.id ?? "";
   fillFolderList();
 
-  tag.value = options.tag;
-  showCurrent(options.baseFolderId);
+  tag.value = o.tag;
+  showCurrent(o.baseFolderId);
+
+  rtmApiKey.value = o.rtmApiKey;
+  rtmSecret.value = o.rtmSecret;
+  await refreshRtm();
 }
 
 account.addEventListener("change", () => {
@@ -76,5 +125,40 @@ folderList.addEventListener("change", async () => {
 });
 
 tag.addEventListener("change", () => save({ tag: tag.value.trim() }));
+rtmApiKey.addEventListener("change", () => save({ rtmApiKey: rtmApiKey.value.trim() }));
+rtmSecret.addEventListener("change", () => save({ rtmSecret: rtmSecret.value.trim() }));
+
+// Desktop auth flow: getFrob -> user authorises in the browser -> getToken(frob).
+rtmConnect.addEventListener("click", async () => {
+  try {
+    const creds = { ...credsOf(await options()), token: "" };
+    ({ frob } = await rtmCall("rtm.auth.getFrob", {}, creds));
+    await messenger.windows.openDefaultBrowser(authUrl(frob, creds));
+    rtmStatus.textContent = "Authorize the add-on in your browser, then click Finish connection.";
+    rtmFinish.hidden = false;
+  } catch (error) {
+    rtmStatus.textContent = error.message;
+  }
+});
+
+rtmFinish.addEventListener("click", async () => {
+  try {
+    const creds = { ...credsOf(await options()), token: "" };
+    const { auth } = await rtmCall("rtm.auth.getToken", { frob }, creds);
+    frob = "";
+    await save({ rtmToken: auth.token, rtmUser: auth.user.username });
+    await refreshRtm();
+  } catch (error) {
+    rtmStatus.textContent = error.message;
+  }
+});
+
+rtmDisconnect.addEventListener("click", async () => {
+  frob = "";
+  await save({ rtmToken: "", rtmUser: "", rtmListId: "" });
+  await refreshRtm();
+});
+
+rtmList.addEventListener("change", () => save({ rtmListId: rtmList.value }));
 
 load();

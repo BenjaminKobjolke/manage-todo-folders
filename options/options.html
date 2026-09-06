@@ -23,6 +23,28 @@
       <input id="tag" placeholder="#bk_todo_" />
     </label>
     <p class="hint">Result copied to clipboard: prefix + folder number, e.g. <code>#bk_todo_010</code>.</p>
+
+    <h2>Remember The Milk</h2>
+    <label>
+      API key
+      <input id="rtmApiKey" autocomplete="off" />
+    </label>
+    <label>
+      Shared secret
+      <input id="rtmSecret" type="password" autocomplete="off" />
+    </label>
+    <p class="hint">Get both at <code>rememberthemilk.com/services/api/keys.rtm</code>.</p>
+    <div class="buttons">
+      <button id="rtmConnect">Connect</button>
+      <button id="rtmFinish" hidden>Finish connection</button>
+      <button id="rtmDisconnect" hidden>Disconnect</button>
+    </div>
+    <p id="rtmStatus"></p>
+    <label>
+      Target list
+      <select id="rtmList"></select>
+    </label>
+    <p class="hint">Create ToDo asks for a task name (Smart Add syntax) and adds it to this list with tag prefix + number.</p>
     <script type="module" src="options.js"></script>
   </body>
 </html>

@@ -45,3 +45,30 @@ label input {
   margin-bottom: 8px;
   font: inherit;
 }
+
+label select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font: inherit;
+}
+
+h2 {
+  font-size: 13px;
+  margin: 20px 0 8px;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+button {
+  font: inherit;
+}
+
+#rtmStatus {
+  margin: 0 0 12px;
+  color: var(--muted);
+}

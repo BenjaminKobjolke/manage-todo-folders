@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Create ToDo</title>
+    <link rel="stylesheet" href="../options/options.css" />
+    <style>
+      body { display: flex; flex-direction: column; gap: 12px; max-width: none; padding: 16px; }
+      label { margin: 0; }
+      .buttons { display: flex; justify-content: flex-end; gap: 8px; }
+      button { font: inherit; padding: 4px 24px; }
+    </style>
+  </head>
+  <body>
+    <label>
+      Task name (Smart Add syntax, e.g. <code>Rechnung bezahlen !1 today</code>)
+      <input id="name" autofocus autocomplete="off" />
+    </label>
+    <div class="buttons">
+      <button id="cancel">Cancel</button>
+      <button id="ok">OK</button>
+    </div>
+    <script src="prompt.js"></script>
+  </body>
+</html>

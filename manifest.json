@@ -19,8 +19,13 @@
     "storage",
     "clipboardWrite"
   ],
+  "host_permissions": [
+    "https://api.rememberthemilk.com/*"
+  ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "background.js"
+    ],
     "type": "module"
   },
   "options_ui": {
