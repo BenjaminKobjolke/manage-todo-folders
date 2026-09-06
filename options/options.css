@@ -1,0 +1,47 @@
+:root {
+  color-scheme: light dark;
+  --fg: #1a1a1a;
+  --bg: #ffffff;
+  --muted: #666666;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e8e8e8;
+    --bg: #2b2b2b;
+    --muted: #a0a0a0;
+  }
+}
+
+body {
+  font: message-box;
+  font-size: 13px;
+  padding: 8px;
+  max-width: 480px;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+label input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font: inherit;
+}
+
+#folderCurrent,
+.hint {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+#folderList {
+  width: 100%;
+  margin-bottom: 8px;
+  font: inherit;
+}

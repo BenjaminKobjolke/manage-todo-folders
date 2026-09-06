@@ -1,0 +1,7 @@
+node_modules/
+web-ext-artifacts/
+*.xpi
+claude-plans
+.claude/
+/PLAN_*.md
+tmp/commit_msg.tmp

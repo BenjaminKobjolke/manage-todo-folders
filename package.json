@@ -1,0 +1,15 @@
+{
+  "name": "manage-todo-folders",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "web-ext run -c web-ext-config.cjs --firefox-binary thunderbird",
+    "build": "web-ext build -c web-ext-config.cjs --filename \"manage-todo-folders-{version}.xpi\"",
+    "lint": "web-ext lint -c web-ext-config.cjs",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "devDependencies": {
+    "web-ext": "^10.5.0"
+  }
+}

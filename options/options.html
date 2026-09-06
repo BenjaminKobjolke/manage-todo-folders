@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Manage ToDo Folders - Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <label>
+      Email account
+      <select id="account"></select>
+    </label>
+
+    <label>
+      Base todo folder
+      <input id="folderSearch" placeholder="type to filter..." autocomplete="off" />
+    </label>
+    <select id="folderList" size="8"></select>
+    <p id="folderCurrent"></p>
+
+    <label>
+      ToDo tag prefix
+      <input id="tag" placeholder="#bk_todo_" />
+    </label>
+    <p class="hint">Result copied to clipboard: prefix + folder number, e.g. <code>#bk_todo_010</code>.</p>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

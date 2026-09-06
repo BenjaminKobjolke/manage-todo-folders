@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Manage ToDo Folders",
+  "version": "0.1.0",
+  "description": "Move selected mail into the next free numbered todo folder and copy its tag.",
+  "author": "Benjamin Kobjolke",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "manage-todo-folders@kobjolke.de",
+      "strict_min_version": "128.0"
+    }
+  },
+  "permissions": [
+    "accountsRead",
+    "accountsFolders",
+    "messagesRead",
+    "messagesMove",
+    "menus",
+    "storage",
+    "clipboardWrite"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "options/options.html"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
