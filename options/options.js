@@ -2,18 +2,18 @@ import { getOptions } from "../lib/options.js";
 import { decodeImapUtf7 } from "../lib/imapUtf7.js";
 import { rtmCall, authUrl } from "../lib/rtm.js";
 
-const account = document.getElementById("account");
-const folderSearch = document.getElementById("folderSearch");
-const folderList = document.getElementById("folderList");
+const account = /** @type {HTMLSelectElement} */ (document.getElementById("account"));
+const folderSearch = /** @type {HTMLInputElement} */ (document.getElementById("folderSearch"));
+const folderList = /** @type {HTMLSelectElement} */ (document.getElementById("folderList"));
 const folderCurrent = document.getElementById("folderCurrent");
-const tag = document.getElementById("tag");
-const rtmApiKey = document.getElementById("rtmApiKey");
-const rtmSecret = document.getElementById("rtmSecret");
+const tag = /** @type {HTMLInputElement} */ (document.getElementById("tag"));
+const rtmApiKey = /** @type {HTMLInputElement} */ (document.getElementById("rtmApiKey"));
+const rtmSecret = /** @type {HTMLInputElement} */ (document.getElementById("rtmSecret"));
 const rtmConnect = document.getElementById("rtmConnect");
 const rtmFinish = document.getElementById("rtmFinish");
 const rtmDisconnect = document.getElementById("rtmDisconnect");
 const rtmStatus = document.getElementById("rtmStatus");
-const rtmList = document.getElementById("rtmList");
+const rtmList = /** @type {HTMLSelectElement} */ (document.getElementById("rtmList"));
 
 let allFolders = [];
 // Frob from getFrob, valid until "Finish connection". Page memory only: reopening options restarts Connect.

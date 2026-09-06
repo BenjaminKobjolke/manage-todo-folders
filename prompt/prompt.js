@@ -4,7 +4,7 @@ const ids = (new URLSearchParams(window.location.search).get("ids") ?? "")
   .split(",")
   .filter(Boolean)
   .map(Number);
-const input = document.getElementById("name");
+const input = /** @type {HTMLInputElement} */ (document.getElementById("name"));
 
 async function submit() {
   const name = input.value.trim();

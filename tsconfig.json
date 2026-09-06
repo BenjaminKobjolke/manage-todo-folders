@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "dom"],
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["**/*.js", "**/*.cjs", "types/**/*.d.ts"],
+  "exclude": ["node_modules", "web-ext-artifacts", "tmp", "claude-plans", "code_analysis_results"]
+}
