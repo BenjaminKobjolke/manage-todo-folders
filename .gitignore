@@ -4,4 +4,6 @@ web-ext-artifacts/
 claude-plans
 .claude/
 /PLAN_*.md
+PLAN.md
+HANDOFF.md
 tmp/commit_msg.tmp
