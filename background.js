@@ -31,15 +31,22 @@ async function createTodo(name, ids) {
     }
 
     const subfolders = await messenger.folders.getSubFolders(baseFolderId, false);
-    // messages.list() instead of getFolderInfo().totalMessageCount: the cached count is unreliable
-    // for IMAP subfolders (stale or undefined), which made every run create a new folder.
+    // messages.list() reads the local DB, which is empty for an IMAP folder filled but never opened here,
+    // so each folder is synced first (experiments/imapSync). getFolderInfo().totalMessageCount can be stale
+    // or undefined; take the larger so a full folder is never reused.
     const withCounts = await Promise.all(
       subfolders.map(async (folder) => {
-        const { messages: page } = await messenger.messages.list(folder.id);
-        return { ...folder, totalMessageCount: page.length };
+        // ponytail: 10 s cap per folder so a server that never answers can't hang Create ToDo; counts then fall back to the local DB.
+        await Promise.race([messenger.imapSync.syncFolder(folder.id), new Promise((resolve) => setTimeout(resolve, 10000))]);
+        const [{ messages: page }, info] = await Promise.all([
+          messenger.messages.list(folder.id),
+          messenger.folders.getFolderInfo(folder.id),
+        ]);
+        const counts = `${page.length}/${info.totalMessageCount}`;
+        return { ...folder, counts, totalMessageCount: Math.max(page.length, info.totalMessageCount ?? 0) };
       }),
     );
-    console.log("Manage ToDo Folders: subfolders", withCounts.map((f) => `${f.name}=${f.totalMessageCount}`).join(" "));
+    console.log("Manage ToDo Folders: subfolders (listed/info)", withCounts.map((f) => `${f.name}=${f.counts}`).join(" "));
 
     const pick = pickTodoFolder(withCounts);
     const label = `${tag}${pick.number}`;

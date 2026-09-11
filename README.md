@@ -12,6 +12,8 @@ Thunderbird add-on (128+). Right-click selected mail → **Create ToDo**:
 
 Add-on options: pick the email account, filter and click the base todo folder (e.g. `@BKToDo`), set the tag prefix (e.g. `#bk_todo_`). For RTM enter API key and shared secret, click **Connect**, authorise in the browser, click **Finish connection**, pick the target list (default Inbox). See `docs/SETTINGS.md`.
 
+The add-on bundles a small WebExtension Experiment (`experiments/imapSync`) to sync IMAP todo folders before checking them for emptiness, so Thunderbird's install prompt asks for full access.
+
 **Tip:** new folders open threaded/grouped by default. To get a flat list in every new todo folder, open Thunderbird Settings → General → **Config Editor…** and set `mailnews.default_view_flags` to `0` (optionally `mailnews.default_sort_type` = `18`, `mailnews.default_sort_order` = `2` for newest first). Applies to folders created afterwards only.
 
 ## Docs

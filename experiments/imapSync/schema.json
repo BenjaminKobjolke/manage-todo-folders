@@ -1,0 +1,14 @@
+[
+  {
+    "namespace": "imapSync",
+    "functions": [
+      {
+        "name": "syncFolder",
+        "type": "function",
+        "async": true,
+        "description": "Downloads the headers of an IMAP folder into the local DB, like selecting it in the UI. No-op for non-IMAP folders.",
+        "parameters": [{ "name": "folderId", "type": "string" }]
+      }
+    ]
+  }
+]

@@ -19,6 +19,11 @@ export default [
     languageOptions: { sourceType: "commonjs" },
   },
   {
+    // Experiment implementations are privileged scripts, not modules.
+    files: ["experiments/**/*.js"],
+    languageOptions: { sourceType: "script", globals: { ChromeUtils: "readonly", ExtensionCommon: "readonly", Ci: "readonly" } },
+  },
+  {
     ignores: ["types/**", "node_modules/**", "web-ext-artifacts/**", "tmp/**", "claude-plans/**", "code_analysis_results/**"],
   },
 ];
