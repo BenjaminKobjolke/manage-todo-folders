@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { md5 } from "../lib/md5.js";
-import { sign, rtmCall, authUrl, addTask } from "../lib/rtm.js";
+import { sign, rtmCall, authUrl, addTask, getTags } from "../lib/rtm.js";
 
 test("md5 known vectors", () => {
   assert.equal(md5(""), "d41d8cd98f00b204e9800998ecf8427e");
@@ -80,4 +80,36 @@ test("addTask handles array-shaped taskseries/task", async () => {
   });
   const result = await addTask({ name: "x", listId: "", tag: "t" }, { apiKey: "K", secret: "S", token: "T", fetch });
   assert.deepEqual(result, { name: "x" });
+});
+
+const memoryStorage = (initial = {}) => {
+  const data = { ...initial };
+  return { data, get: async (key) => ({ [key]: data[key] }), set: async (patch) => Object.assign(data, patch) };
+};
+const tagsFetch = (tag) => fakeFetch(() => ({ stat: "ok", tags: { tag } }));
+const creds = (fetch) => ({ apiKey: "K", secret: "S", token: "T", fetch });
+const DAY = 24 * 60 * 60 * 1000;
+
+test("getTags uses a cache younger than 24 h", async () => {
+  const { fetch, calls } = tagsFetch([{ name: "b" }, { name: "a" }]);
+  const storage = memoryStorage({ rtmTags: { names: ["old"], fetchedAt: 1000 } });
+  assert.deepEqual(await getTags(creds(fetch), storage, { now: 1000 + DAY - 1 }), { names: ["old"], fetchedAt: 1000 });
+  assert.equal(calls.length, 0);
+});
+
+test("getTags refetches when stale or forced, normalizing a single tag object", async () => {
+  const { fetch, calls } = tagsFetch({ name: "solo" });
+  const storage = memoryStorage({ rtmTags: { names: ["old"], fetchedAt: 0 } });
+  assert.deepEqual(await getTags(creds(fetch), storage, { now: DAY }), { names: ["solo"], fetchedAt: DAY });
+  await getTags(creds(fetch), storage, { now: DAY + 1, force: true });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].method, "rtm.tags.getList");
+  assert.deepEqual(storage.data.rtmTags, { names: ["solo"], fetchedAt: DAY + 1 });
+});
+
+test("getTags falls back to the stale cache on error, throws without one", async () => {
+  const { fetch } = fakeFetch(() => ({ stat: "fail", err: { code: "1", msg: "down" } }));
+  const stale = { names: ["old"], fetchedAt: 0 };
+  assert.deepEqual(await getTags(creds(fetch), memoryStorage({ rtmTags: stale }), { now: DAY }), stale);
+  await assert.rejects(getTags(creds(fetch), memoryStorage(), { now: DAY }), { message: "RTM 1: down" });
 });

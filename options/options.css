@@ -3,6 +3,8 @@
   --fg: #1a1a1a;
   --bg: #ffffff;
   --muted: #666666;
+  --border: #c0c0c0;
+  --hover: #dde8f8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -10,6 +12,8 @@
     --fg: #e8e8e8;
     --bg: #2b2b2b;
     --muted: #a0a0a0;
+    --border: #555555;
+    --hover: #3d4a5c;
   }
 }
 

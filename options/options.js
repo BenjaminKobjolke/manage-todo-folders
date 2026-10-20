@@ -1,6 +1,6 @@
 import { getOptions } from "../lib/options.js";
 import { decodeImapUtf7 } from "../lib/imapUtf7.js";
-import { rtmCall, authUrl } from "../lib/rtm.js";
+import { rtmCall, authUrl, getTags } from "../lib/rtm.js";
 
 const account = /** @type {HTMLSelectElement} */ (document.getElementById("account"));
 const folderSearch = /** @type {HTMLInputElement} */ (document.getElementById("folderSearch"));
@@ -14,6 +14,8 @@ const rtmFinish = document.getElementById("rtmFinish");
 const rtmDisconnect = document.getElementById("rtmDisconnect");
 const rtmStatus = document.getElementById("rtmStatus");
 const rtmList = /** @type {HTMLSelectElement} */ (document.getElementById("rtmList"));
+const rtmRefreshTags = document.getElementById("rtmRefreshTags");
+const rtmTags = document.getElementById("rtmTags");
 
 let allFolders = [];
 // Frob from getFrob, valid until "Finish connection". Page memory only: reopening options restarts Connect.
@@ -53,6 +55,8 @@ async function refreshRtm() {
   const o = await options();
   rtmFinish.hidden = !frob;
   rtmDisconnect.hidden = !o.rtmToken;
+  rtmRefreshTags.hidden = !o.rtmToken;
+  rtmTags.textContent = "";
   rtmList.innerHTML = "";
   if (!o.rtmToken) {
     if (!frob) rtmStatus.textContent = "Not connected";
@@ -77,9 +81,16 @@ async function refreshRtm() {
       rtmList.value = selected.id;
       if (selected.id !== o.rtmListId) await save({ rtmListId: selected.id });
     }
+    await showTags(o);
   } catch (error) {
     rtmStatus.textContent = error.message;
   }
+}
+
+// Cached unless force; the prompt refetches on its own after 24 h.
+async function showTags(o, force = false) {
+  const { names, fetchedAt } = await getTags(credsOf(o), messenger.storage.local, { force });
+  rtmTags.textContent = `${names.length} tags, updated ${new Date(fetchedAt).toLocaleString()}`;
 }
 
 async function load() {
@@ -156,7 +167,17 @@ rtmFinish.addEventListener("click", async () => {
 rtmDisconnect.addEventListener("click", async () => {
   frob = "";
   await save({ rtmToken: "", rtmUser: "", rtmListId: "" });
+  await messenger.storage.local.remove("rtmTags");
   await refreshRtm();
+});
+
+rtmRefreshTags.addEventListener("click", async () => {
+  rtmTags.textContent = "Loading...";
+  try {
+    await showTags(await options(), true);
+  } catch (error) {
+    rtmTags.textContent = error.message;
+  }
 });
 
 rtmList.addEventListener("change", () => save({ rtmListId: rtmList.value }));
