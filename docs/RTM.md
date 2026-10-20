@@ -32,13 +32,17 @@ The frob lives only in the options page's memory. Closing the options before **F
 
 `taskseries` and `task` are objects for a single item and arrays for several; the code takes `[0]` of `[].concat(x)`.
 
+## Tag cache
+
+`getTags(creds, storage, { force })` in `lib/rtm.js` backs the `#` autocomplete in the Create ToDo prompt. `rtm.tags.getList` is called at most once every 24 h; the names are stored as `rtmTags: { names, fetchedAt }` in `storage.local`. **Refresh tags** in the prompt and in the options forces a fetch. A failed fetch returns the stale cache. **Disconnect** removes the cache. `tags.tag` is an object for one tag and an array for several, same quirk as `taskseries`.
+
 ## Storage and security
 
 API key, secret and token are stored in plain text in `storage.local` (key `options`). Same trust level as any RTM desktop client; the secret only signs requests for this key. **Disconnect** clears token, user and list id, not key/secret.
 
 ## Relevant files
 
-- `lib/rtm.js` – `sign`, `rtmCall`, `authUrl`, `addTask`.
+- `lib/rtm.js` – `sign`, `rtmCall`, `authUrl`, `addTask`, `getTags`.
 - `lib/md5.js` – MD5.
 - `test/rtm.test.js` – signing vector, envelope handling, `addTask` call sequence.
 - `options/options.js` – Connect / Finish / Disconnect, list selection.

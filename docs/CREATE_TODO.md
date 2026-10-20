@@ -5,7 +5,12 @@ Context menu entry on the message list. Asks for a task name, creates a Remember
 ## Flow
 
 1. Right-click one or more selected messages → **Create ToDo**.
-2. A small prompt window (`prompt/prompt.html`) asks for the task name in RTM Smart Add syntax, e.g. `Rechnung bezahlen !1 today`. Enter/OK submits, Escape/Cancel aborts. The selected message ids travel in the prompt's query string and come back with the name via `runtime.sendMessage`, so the background page keeps no state.
+2. A small prompt window (`prompt/prompt.html`) asks for the task name in RTM Smart Add syntax, e.g. `Rechnung bezahlen !1 today`. Enter/OK submits, Escape/Cancel aborts. Typing a Smart Add operator opens a suggestion list (`lib/smartAdd.js`, like the RTM web app):
+   - `#p` → cached RTM tags starting with `p` (case-insensitive, max 10), inserts `#p_summera_ai `.
+   - `!` → Priority 1/2/3 (`!1`…`!3`) or No Priority (removes the `!`).
+   - `^` → Today, Tomorrow, the next three weekdays (`^thursday`), 1 week (`^2026-10-27`, one ISO token so RTM's date parser does not swallow the following words), No due date, Calendar picker (native `<input type="date">`, inserts `^YYYY-MM-DD`).
+   - Arrow keys select, Enter/Tab/click accept, Escape closes the list. With the list closed Enter submits and Escape closes the window.
+   - **Refresh tags** re-downloads the tag list (see `docs/RTM.md`, tag cache). The selected message ids travel in the prompt's query string and come back with the name via `runtime.sendMessage`, so the background page keeps no state.
 3. The add-on reads the options from storage. No base folder set → alert "Set the base todo folder in the add-on options first."
 4. Direct subfolders of the base folder named `NNN` or `NNN - anything` are collected and sorted by number.
 5. Each IMAP folder is synced from the server first (`messenger.imapSync.syncFolder`, max 10 s per folder), then checked for emptiness: its count is the larger of `messenger.messages.list` length and `folders.getFolderInfo().totalMessageCount`. The first folder with count 0 is reused.
@@ -44,5 +49,6 @@ Errors are logged to the add-on console with the prefix `Manage ToDo Folders:` a
 - `lib/rtm.js` – RTM client, see `docs/RTM.md`.
 - `experiments/imapSync/implementation.js`, `schema.json` – Experiment `imapSync.syncFolder(folderId)`, registered under `experiment_apis` in `manifest.json`.
 - `test/todo.test.js` – unit tests for `pickTodoFolder` and `folderName`.
-- `prompt/prompt.html`, `prompt/prompt.js` – task name prompt.
+- `prompt/prompt.html`, `prompt/prompt.js` – task name prompt with autocomplete.
+- `lib/smartAdd.js`, `test/smartAdd.test.js` – token detection and suggestions for `#`, `!`, `^`.
 - `alert/alert.html`, `alert/alert.js` – result/error popup.
