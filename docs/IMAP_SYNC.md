@@ -53,7 +53,7 @@ This downloads the folder's headers from the server into the local DB. Afterward
 
 - **Full privileges.** Thunderbird's install prompt warns that the add-on has full, unrestricted access. An ATN listing gets a stricter review.
 - **Internal module.** `ExtensionAccounts.sys.mjs` and `getFolder` are not a public API. A major Thunderbird update can rename or move them. Symptom: Create ToDo fails with an error from `imapSync.syncFolder`. Check the comm-central source for the current export.
-- **`npm run lint` reports `MANIFEST_FIELD_PRIVILEGED`** for `experiment_apis`. web-ext's linter follows Firefox rules, and Firefox does not allow experiments. Thunderbird does, and `npm run build` is not affected.
+- **`web-ext lint` reports `MANIFEST_FIELD_PRIVILEGED`** for `experiment_apis`. Its linter follows Firefox rules, and Firefox does not allow experiments. Thunderbird does, and `npm run build` is not affected. The project's `npm run lint` uses ESLint for source checks instead.
 - A folder emptied on another device reads as empty only after the sync. That is now automatic, as long as the server answers within 10 s.
 
 ## Relevant files

@@ -27,7 +27,7 @@ The add-on bundles a small WebExtension Experiment (`experiments/imapSync`) to s
 ```
 npm install
 npm test          # unit tests (node:test)
-npm run lint      # web-ext lint
+npm run lint      # ESLint
 npm run build     # -> web-ext-artifacts/manage-todo-folders-<version>.xpi
 ```
 
