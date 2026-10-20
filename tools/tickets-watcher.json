@@ -7,5 +7,15 @@
     "analyze_code.bat",
     "analyze_code_config.bat",
     "analyze_code_config.example.bat"
-  ]
+  ],
+  "analysis_commands": [],
+  "analysis_commands_seen": {
+    "scripts": [
+      "analyze_changed_and_new_files.bat",
+      "analyze_code.bat",
+      "analyze_code_config.bat",
+      "analyze_code_config.example.bat"
+    ],
+    "tests": true
+  }
 }
