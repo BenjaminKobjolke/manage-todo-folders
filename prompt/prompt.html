@@ -7,19 +7,38 @@
     <style>
       body { display: flex; flex-direction: column; gap: 12px; max-width: none; padding: 16px; }
       label { margin: 0; }
+      .field { position: relative; }
       .buttons { display: flex; justify-content: flex-end; gap: 8px; }
       button { font: inherit; padding: 4px 24px; }
+      #name { display: block; width: 100%; box-sizing: border-box; font: inherit; }
+      #refreshTags { padding: 4px 12px; }
+      #tagStatus { align-self: center; margin-right: auto; color: var(--muted); }
+      #suggest {
+        position: absolute; left: 0; top: 100%; z-index: 1; min-width: 240px; max-height: 260px; overflow-y: auto;
+        margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--bg); border: 1px solid var(--border);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      #suggest li { display: flex; justify-content: space-between; gap: 24px; padding: 4px 12px; cursor: default; }
+      #suggest li.active { background: var(--hover); }
+      #suggest .hint { margin: 0; }
+      #datePick { position: absolute; left: 0; top: 100%; width: 0; height: 0; opacity: 0; border: 0; padding: 0; }
     </style>
   </head>
   <body>
     <label>
-      Task name (Smart Add syntax, e.g. <code>Rechnung bezahlen !1 today</code>)
-      <input id="name" autofocus autocomplete="off" />
+      Task name (Smart Add: <code>#tag</code> <code>!1</code> <code>^today</code>)
     </label>
+    <div class="field">
+      <input id="name" autofocus autocomplete="off" />
+      <ul id="suggest" hidden></ul>
+      <input id="datePick" type="date" tabindex="-1" />
+    </div>
     <div class="buttons">
+      <button id="refreshTags">Refresh tags</button>
+      <span id="tagStatus"></span>
       <button id="cancel">Cancel</button>
       <button id="ok">OK</button>
     </div>
-    <script src="prompt.js"></script>
+    <script type="module" src="prompt.js"></script>
   </body>
 </html>

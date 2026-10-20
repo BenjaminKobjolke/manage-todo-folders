@@ -14,7 +14,7 @@ messenger.menus.onClicked.addListener((info) => {
   const ids = (info.selectedMessages?.messages ?? []).map((message) => message.id);
   if (!ids.length) return;
   // The prompt carries the ids and posts them back with the task name; no state kept here.
-  openPopup("prompt/prompt.html", { ids: ids.join(",") }, 170);
+  openPopup("prompt/prompt.html", { ids: ids.join(",") }, 380);
 });
 
 messenger.runtime.onMessage.addListener((request) => {
