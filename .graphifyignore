@@ -1,0 +1,11 @@
+/.git/
+/claude-plans/
+/code_analysis_results/
+/docs/
+/icons/
+/node_modules/
+/test/
+/tickets/
+/tmp/
+/tools/
+/web-ext-artifacts/
