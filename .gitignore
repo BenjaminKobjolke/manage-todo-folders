@@ -12,3 +12,4 @@ code_analysis_results/
 /tickets/
 graphify-out/
 .reasonix/
+coding-rules.json
