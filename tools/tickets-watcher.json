@@ -6,7 +6,8 @@
     "analyze_changed_and_new_files.bat",
     "analyze_code.bat",
     "analyze_code_config.bat",
-    "analyze_code_config.example.bat"
+    "analyze_code_config.example.bat",
+    "graphify_update.bat"
   ],
   "analysis_commands": [
     "npm test -- --test-timeout=120000",
