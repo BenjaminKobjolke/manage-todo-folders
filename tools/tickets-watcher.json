@@ -1,6 +1,6 @@
 {
   "files": {
-    "TICKETS_WATCHER_COMMANDS.md": 2
+    "TICKETS_WATCHER_COMMANDS.md": 3
   },
   "command_check_scripts": [
     "analyze_changed_and_new_files.bat",
@@ -11,7 +11,8 @@
   ],
   "analysis_commands": [
     "npm test -- --test-timeout=120000",
-    "npm run lint"
+    "npm run lint",
+    "tools\\analyze_changed_and_new_files.bat"
   ],
   "analysis_commands_seen": {
     "scripts": [
@@ -28,6 +29,16 @@
     },
     "npm run lint": {
       "test": "green"
+    },
+    "tools\\analyze_changed_and_new_files.bat": {
+      "code_quality": "green"
     }
-  }
+  },
+  "analysis_command_kinds": {
+    "npm test -- --test-timeout=120000": "test",
+    "npm run lint": "test",
+    "tools\\analyze_changed_and_new_files.bat": "code_quality"
+  },
+  "analysis_code_quality_answered": true,
+  "project_id": 12349
 }
