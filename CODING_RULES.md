@@ -1,7 +1,7 @@
 <!-- Managed by /coding-rules:apply — do not edit rule blocks by hand -->
 
 # Version
-12
+17
 
 Increase this version number whenever this rule file changes.
 
@@ -13,6 +13,7 @@ corresponding `*_RULES.md` files.
 ---
 
 ## Keep CODING_RULES.md in Sync
+<!-- steps: code -->
 
 When working on a project, copy all relevant rules into the project's `CODING_RULES.md` file
 (project root). The project's `CLAUDE.md` carries only a small versioned pointer block that
@@ -22,6 +23,9 @@ mandates reading `CODING_RULES.md` before code work — never the full rules, an
 - Always include all rules from `COMMON_RULES.md` and `IMPLEMENTATION_FLOW.md`.
   `COMMON_RULES.md` is copied into the project's `CODING_RULES.md`;
   `IMPLEMENTATION_FLOW.md` is copied into the project's own `IMPLEMENTATION_FLOW.md`
+- `apply` also writes `CODING_RULES_PLAN.md`, `CODING_RULES_REVIEW.md` and
+  `CODING_RULES_CODE.md` from the same rule blocks. Use `<!-- steps: plan, review, code -->`
+  under a heading to limit its section.
 - Also include applicable language-specific, project-type, and supplemental rule files
   (see `PROJECT_TYPES.md` for the project-type overview)
 - Include optional addon rule files only when the user has opted in to that addon
@@ -117,6 +121,7 @@ components work correctly together and catch issues that unit tests alone cannot
 ---
 
 ## Test Runner Scripts
+<!-- steps: review, code -->
 
 Every project must provide the following batch files in the `tools/` directory:
 
@@ -148,6 +153,7 @@ or use the runner's own log-file option.
 ---
 
 ## No `pause` in Batch Files
+<!-- steps: review, code -->
 
 Batch files must never contain a `pause` line. `pause` waits for a keypress, so any bat that has one
 hangs forever when run by CI, another bat, or an AI agent. End with an explicit `exit /b <code>`
@@ -188,6 +194,7 @@ from being re-invented in every new project.
 ---
 
 ## New Projects Start From a Template
+<!-- steps: plan -->
 
 Before creating a new project (an API, an app, a tool — anything that gets its own folder),
 ask the user whether a template project exists for that kind of project. Never scaffold from
@@ -261,12 +268,22 @@ kept to a minimum — a future maintainer (or you, at 3am) has to understand it.
 
 ## Confirm Dependency Versions
 
-Before adding any new package or library, confirm the version with the user to ensure we use
-up-to-date dependencies.
+When adding a new package or library, choose its version yourself from verified facts. Do not
+ask the user to confirm a routine version choice.
 
-- Do not assume which version to use
-- Ask the user to verify the latest stable version
-- Avoid outdated packages that may have security vulnerabilities or missing features
+- Never assume a version from memory: check the authoritative release source (the package
+  registry or the project's official releases) for the latest stable release.
+- Check the project's constraints: runtime/SDK version, the existing lock file, peer
+  dependencies and the package's supported platforms.
+- Use the latest stable release that satisfies them. Skip pre-releases (alpha, beta, rc, dev).
+- Pin or lock the resolved version the way the project already does (lock file, exact pin, or
+  its range convention), and name the chosen version and where it was checked in the plan or
+  change summary.
+- A version the user specified wins.
+- Ask the user only when a real tradeoff remains: the latest stable needs a new major line or a
+  runtime upgrade, supported versions conflict, a security advisory affects the candidate, or
+  the release source cannot be checked.
+- Avoid outdated packages that may have security vulnerabilities or missing features.
 
 ---
 
@@ -308,9 +325,11 @@ The logger's name is fixed per language so it is the same known type in every pr
 | Dart/Flutter  | `AppLogger`        | `app_logger.dart`   |
 | Kotlin        | `AppLogger`        | `AppLogger.kt`      |
 | C# (plain)    | `AppLogger`        | `AppLogger.cs`      |
+| C++           | `AppLogger`        | `AppLogger.h` / `AppLogger.cpp` |
 | Unity C#      | `GameLog` (static) | `GameLog.cs`        |
 | Svelte/JS/TS  | `logger` (export)  | `logger.ts`         |
 | Arduino       | `Log`              | `Log.h` / `Log.cpp` |
+| Rust          | `log` / `tracing` facade, `app_logger::init()` | `app_logger.rs` |
 
 ---
 
@@ -382,6 +401,53 @@ third-party APIs.
   last line of defence, not as permission to skip the order.
 - **Setting it up** is work in each project: when one project of the system lacks the submodule
   or its test, request it there (linked todo or `/feedback:write`).
+
+---
+
+## Upstream Forks
+
+In a fork that merges changes from an upstream project, these rules apply to new and changed code
+only. Do not reformat, rename, move, or refactor upstream code that the task does not need. Prefer
+new files for features, and keep project-specific setup in new files plus the `CLAUDE.md` pointer
+so upstream merges stay clean.
+
+---
+
+## Coding-Rules Plugin Updates in Tickets Watcher Runs
+
+A todo may need a rules version that is published in the coding-rules marketplace but not
+installed on this machine yet (for example a new rule file). A Tickets Watcher run — a phase the
+watcher started for a todo, working from `tickets/<id>/` — may install it itself. Any other
+session asks the user to update the plugin instead.
+
+- **Precondition check.** Read `claude plugin list --json` and take the entry
+  `coding-rules@<marketplace>`. The check passes only when its `version` is at least the
+  required version and `<installPath>/rules/<required rule file>` exists. Use `installPath`;
+  never build the cache path by hand.
+- **Bounded update.** Only when the check fails, run exactly these two commands, then check
+  again:
+  1. `claude plugin marketplace update <marketplace>` (the marketplace of the plugin id, today
+     `claude-coding-rules`);
+  2. `claude plugin update coding-rules@<marketplace> --scope user --json`.
+  Nothing else: no `install`, `uninstall`, `enable` or `disable`, no other plugin or
+  marketplace, no `-y` and no `--accept-command`.
+- **Stop when it does not work.** When a command exits non-zero, asks to confirm a command, or
+  the second check still fails, stop with `OUTCOME: blocked` and
+  `BLOCKER: coding-rules <version> with <rule file> is not installed`, quoting the CLI output.
+- **Never edit machine-managed plugin files.** No agent copies files into, or edits anything
+  under, `~/.claude/plugins/` (cache, `installed_plugins.json`, marketplaces) — not in a watcher
+  run either.
+- **Published first.** The update installs only what the marketplace source holds. The rules
+  todo that adds the version must be done (its `plugin.json` version bumped, and pushed when the
+  source is a git remote). When the source lacks the version, the update cannot help: wait for
+  that todo instead.
+- **Next process.** The run that updated keeps the plugin it started with. Read the new rule
+  files from `installPath`, or let the dependent work continue in a later watcher run.
+- **Planning.** A plan run checks the installed version read-only with
+  `claude plugin list --json` and records it in the plan's context. When it is too old, the
+  plan's first ordered step is "check, update if needed, check again" as above, before any work
+  that needs the rules. It is an ordered step the implement run does, not a by-hand step.
+  Dependent work resumes only after that check passes.
 
 ---
 
@@ -530,159 +596,7 @@ the wrong side of **No God Classes**.
   fields.
 
 # Version
-1
-
-Increase this version number whenever this rule file changes.
-
-# JavaScript Rules (Thunderbird MailExtension, ESM)
-<!-- tailored -->
-
-See `COMMON_RULES.md` for rules that apply to all languages.
-
-## Runtime & Module System
-
-ESM is mandatory — no CommonJS in new code. The runtime is Thunderbird
-(WebExtension APIs); tooling is Node (`npm test`, ESLint, `web-ext`).
-
----
-
-## Error Handling
-
-One `AppError` class for the whole app, plus a const-object enum for error
-codes, in `lib/errors.js`. Freeze enum objects (`Object.freeze`) in new code.
-No scattered ad-hoc `throw new Error(...)` at boundaries — normalize errors
-through `toAppError()`:
-
-```js
-export const ERROR_CODE = Object.freeze({
-  INPUT_INVALID: 'INPUT_INVALID',
-  NETWORK_ERROR: 'NETWORK_ERROR',
-  CONFIG_INVALID: 'CONFIG_INVALID',
-  UNKNOWN: 'UNKNOWN'
-});
-
-export class AppError extends Error {
-  constructor(code, message, extra = {}) {
-    super(message);
-    this.name = 'AppError';
-    this.code = code;
-    this.hint = extra.hint;
-    this.details = extra.details;
-    this.cause = extra.cause;
-  }
-}
-
-export function toAppError(err) {
-  if (err instanceof AppError) return err;
-  const message = err instanceof Error ? err.message : String(err);
-  return new AppError(ERROR_CODE.UNKNOWN, message || 'Unknown error');
-}
-```
-
----
-
-## Boundary Normalizers
-
-Plain JS has no compile-time DTOs — enforce shapes at module boundaries with
-`normalizeXxx()` functions that coerce loose external data (JSON, page
-scraping, API responses) into a known object shape. Every field gets an
-explicit type coercion and default; unknown input degrades to safe defaults
-instead of `undefined` leaking through:
-
-```js
-function normalizeSurfaceState(value) {
-  const object = value && typeof value === 'object' ? value : {};
-  return {
-    url: typeof object.url === 'string' ? object.url : '',
-    editorReady: Boolean(object.editorFound),
-    loginLike: Boolean(object.loginLike)
-  };
-}
-```
-
-This is the JS counterpart of COMMON_RULES "No Bag-of-Keys Returns at Module
-Boundaries" — the normalizer's return shape IS the contract.
-
----
-
-## Settings / Config
-
-Settings live in `browser.storage`, owned by `lib/options.js`
-(`DEFAULT_OPTIONS`, `getOptions`). No hardcoded environment values elsewhere
-(see COMMON_RULES).
-
----
-
-## Output & Logging
-
-For diagnostic logging use the central logger per the COMMON_RULES logger
-table: one `logger` export in `lib/logger.js` wrapping the sink, with one
-config-driven level/off switch. Feature code never calls `console.log` for
-logging.
-
----
-
-## Linting
-
-Use ESLint with the existing root `eslint.config.js` configuration, run via
-`npm run lint`.
-
----
-
-## Build & Distribution
-
-The XPI is built with `tools/windows/build_xpi.bat`.
-
----
-
-## Testing
-
-Use `node --test` with files under `test/*.test.js`, importing `node:test` and
-`node:assert`.
-
-- **DI seams for side effects.** Modules with external effects (network,
-  browser, sleep) export test-only setters so tests swap implementations
-  without mocking frameworks:
-
-```js
-export function __setAskDepsForTest(deps) {
-  if (deps.browserAskRunner) browserAskRunner = deps.browserAskRunner;
-  if (deps.sleep) sleepImpl = deps.sleep;
-}
-
-export function __resetAskDepsForTest() {
-  browserAskRunner = runBrowserAsk;
-  sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-}
-```
-
-  Always reset in `afterEach` via the `__resetXxxDepsForTest()` counterpart.
-- **Private functions** worth testing are exposed through one grouped export
-  at the bottom of the module:
-
-```js
-export const __test__ = { normalizeSurfaceState, shouldRetry };
-```
-
----
-
-## 5 Essential Additional Rules (must-have)
-
-1. **Required scripts** — test runner scripts wrap `npm test`; the XPI is built
-   with `tools/windows/build_xpi.bat`.
-2. **Naming** — keep camelCase file names as this repository uses them
-   (`smartAdd.js`, `imapUtf7.js`), `camelCase` functions, `PascalCase` classes,
-   `UPPER_SNAKE` module-level constants.
-3. **Constants placement** — const-object enums (`Object.freeze`) live in the
-   module that owns the domain (`ERROR_CODE` in `errors.js`); per-feature
-   string constants at the top of the owning command file. No stringly-typed
-   values scattered through logic.
-4. **Documentation** — topic docs live in `docs/`.
-5. **Zero runtime dependencies** — prefer WebExtension APIs and platform
-   built-ins. Every new package needs the COMMON_RULES version confirmation.
-
-# Version
-1
+4
 
 Increase this version number whenever this rule file changes.
 
@@ -695,7 +609,9 @@ They are about **decisions**, not about a framework. The per-stack implementatio
 guides are:
 
 - `python_setup_files/MODERN_GUI.md` — PySide6 desktop apps
+- `rust/SLINT.md` — Slint desktop apps (Rust)
 - `project_type/FRONTEND.md` — web SPAs (Vite, Tailwind, dark mode)
+- `project_type/SERVER_RENDERED_FRONTEND.md` — server-rendered PHP web frontends (Twig, Bootstrap)
 
 Default UI toolkits ship a *safe* look, not a good one: gradient buttons, boxed tabs,
 every control the same size, no hierarchy. An interface built from defaults reads as a
@@ -856,13 +772,20 @@ fragments — translate the whole sentence with placeholders.
 
 A restyle is not done because the tests pass — tests do not look at the screen.
 
-- Render each screen to an image (offscreen/headless is fine and deterministic) and
-  actually look at all of them after a change.
+- Render each screen to an image and actually look at all of them after a change.
+  Offscreen/headless rendering is fine for quick, deterministic checks.
+- Automatic screenshots of the real running app are allowed and wanted — to verify a
+  task and to produce promotional images (store pages, manuals). Take them with the
+  `automated-application-screenshots` tool and the app's connector (Python, Flutter or
+  web). The connector drives the app from inside its own process — calling a button's
+  click, setting a field's text, opening a screen — so no input can reach another
+  application.
 - Check the app at its smallest supported size, not just the size it opens at.
 - Automate what an image cannot assert: no minimum-size rule in the theme, a focus style
   on every control, a recolored icon that still has pixels.
-- Never drive a real window with synthetic mouse clicks to capture screenshots — the
-  moment focus moves, those clicks land in someone else's application.
+- Never send OS-level synthetic mouse or keyboard input (moving the cursor, injected
+  clicks or key presses) to a real window — the moment focus moves, that input lands in
+  someone else's application. This forbids the input method, not screenshots.
 
 ---
 
@@ -976,3 +899,153 @@ Fix once per project:
 4. Verify: grep the vendored library's distinctive class name in the new `graph.json` — it
    should return only first-party code that *uses* the library (e.g. your own `FacebookManager`),
    never the library's own classes.
+
+# Version
+1
+
+Increase this version number whenever this rule file changes.
+
+# JavaScript Rules (Thunderbird WebExtension)
+
+These rules cover Thunderbird MailExtensions. See `COMMON_RULES.md` for rules that apply to
+every language.
+
+## Scope and pairing
+
+Apply this file instead of `JAVASCRIPT_RULES.md` to Thunderbird add-ons. TypeScript add-ons also
+use `TYPESCRIPT_RULES.md`. Add `DESIGN_RULES.md` when the add-on has popup or options UI.
+
+## Runtime and module system
+
+The extension runs in Thunderbird's WebExtension engine. Node.js is for tests and development
+tools only. Use ESM in extension code, set `"type": "module"` in `package.json`, and set
+`background.type` to `"module"` in the manifest. `web-ext-config.cjs` is the allowed CommonJS
+exception for build configuration. Extension code has no Bun, shebang, `bin`, `process`, or
+`node:` imports.
+
+## Manifest and permissions
+
+Use Manifest V3 for new add-ons. Existing add-ons may remain on MV2 until migrated. Set
+`browser_specific_settings.gecko.id` once and keep it fixed across releases. Set
+`strict_min_version` to the oldest supported Thunderbird ESR. Put user-visible manifest strings
+in `_locales` and refer to them with `__MSG_*__`. The `manifest.json` version is the release
+version; keep `package.json` in sync.
+
+Request the least privilege needed. Justify each permission and `host_permissions` entry with the
+feature that needs it. Prefer optional permissions for infrequently used features. Do not request
+`<all_urls>`.
+
+## Thunderbird APIs
+
+Use the `messenger.*` namespace. Take the tab or window from the event argument; never assume one
+is current. Obtain folder, account, and message IDs from the API instead of constructing them
+from strings. Read paged results from `messages.list` and `messages.continueList` one page at a
+time, following `COMMON_RULES.md` -> “API Clients”.
+
+## Background event page
+
+Thunderbird may suspend a Manifest V3 background when it is idle. Register every event listener
+synchronously at the top level of the background module. Do not keep required persistent state
+only in memory; store it with the WebExtension storage API. Put a top-level `try`/`catch` at each
+listener entry point so an error does not escape the event handler.
+
+## Experiments
+
+Use an experiment only when no WebExtension API provides the needed capability. Keep each
+experiment under `experiments/<api>/` with `schema.json` and `implementation.js`. Privileged code
+stays minimal and does not call business logic. Remove every window listener and observer in
+`onShutdown`. Read the experiment namespace once inside `try`/`catch`, so an unavailable or broken
+experiment cannot take down the add-on. Re-test experiments against every new Thunderbird ESR;
+they extend add-on review and maintenance work.
+
+## Extension pages and content security
+
+Popup and options pages are extension pages. Do not use inline scripts, `eval`, or remote code.
+Build DOM with elements and `textContent`; do not put data into `innerHTML`.
+
+## Settings
+
+Own `storage.local` settings under one key in one options module. Define frozen `DEFAULT_OPTIONS`.
+Implement `getOptions(storageArea)` to merge stored values over defaults, and inject the storage
+area so the logic can be tested without the global API.
+
+## Messaging
+
+Define message types as frozen constants. Normalize message payloads at the receiving boundary
+before business logic uses them.
+
+## Errors and logging
+
+Keep frozen `ERROR_CODE` values and one `AppError` / `toAppError()` module for application errors.
+Do not leave catches empty. Each event or UI entry point must leave the user interface in a
+defined state after an error.
+
+Use boundary functions such as `normalizeOptions()`, `normalizeMessage()` and
+`normalizeXxx()` for storage values, API results, and runtime messages. Treat external values as
+untrusted and return a documented shape with safe defaults.
+
+Export the shared `logger` from one module as specified by the COMMON_RULES logger table. Route
+all logging through it, with one level or off switch; do not leave stray `console.log` calls.
+
+## Localization
+
+Store every user-visible string in `_locales/<language>/messages.json` and read it with
+`messenger.i18n.getMessage`. English is the source locale. Keep locale key sets equal with a test.
+
+## Project structure
+
+Use a structure suited to the add-on's features:
+
+```text
+background.js
+lib/                 # Pure logic with injected dependencies
+popup/
+options/
+experiments/<api>/
+_locales/
+icons/
+test/
+tools/
+docs/
+```
+
+## Testing
+<!-- steps: review, code -->
+
+Use `node --test` with `node:test` and `node:assert/strict`. Pass fake `messenger` and storage
+objects into pure modules. For effects that cannot be injected, use test-only setters and reset
+them after each test. Expose private functions through one `__test__` export when needed. Test
+experiments by hand in Thunderbird.
+
+## Linting
+
+Use ESLint flat config. Lint extension modules with browser globals and readonly `messenger` and
+`browser` globals. Lint `experiments/**` as `sourceType: "script"` with `ChromeUtils`,
+`ExtensionCommon`, `Services`, and `Ci` globals. Configure tools and tests with Node globals.
+
+Run `web-ext lint`. It validates against Firefox and reports `MANIFEST_FIELD_PRIVILEGED` for
+Thunderbird's `experiment_apis`; filter exactly that error and no others.
+
+## Build and distribution
+<!-- steps: review, code -->
+
+Build with `web-ext build` and a `web-ext-config.cjs` `ignoreFiles` list that excludes every
+development-only tree, including tests, docs, tools, plans, temporary files, and package files.
+Check the built `.xpi` contents whenever a folder is added. Run locally with
+`web-ext run --firefox-binary thunderbird`.
+
+Keep runtime dependencies at zero; `web-ext` and ESLint are development dependencies. Provide
+`tools/build.bat` (or the existing project build batch file) to wrap `npm run build` and
+`tools/run_tests.bat` to wrap `npm test`. Use the scripts from
+`javascript_setup_files/tools/` for cli-code-analyzer configuration and commands.
+
+## Naming
+
+Use camelCase module file names and functions, PascalCase classes, and UPPER_SNAKE_CASE
+constants.
+
+# Project Exceptions
+
+Project-specific facts the shared Thunderbird rules do not state.
+
+- The XPI is built with `tools/windows/build_xpi.bat`.
