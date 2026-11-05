@@ -15,12 +15,20 @@ test("tag suggestions filter by prefix, case-insensitive", () => {
   const tags = ["money", "p_calmbase", "P_summera_ai", "shop"];
   const labels = suggestions({ kind: "#", query: "p" }, { tags }).map((s) => s.label);
   assert.deepEqual(labels, ["p_calmbase", "P_summera_ai"]);
-  assert.equal(suggestions({ kind: "#", query: "p_s" }, { tags })[0].insert, "#P_summera_ai ");
+  const suggestion = suggestions({ kind: "#", query: "p_s" }, { tags })[0];
+  if (!suggestion || !("insert" in suggestion)) throw new Error("Expected an insert suggestion");
+  assert.equal(suggestion.insert, "#P_summera_ai ");
 });
 
 test("priority suggestions", () => {
   const list = suggestions({ kind: "!", query: "" });
-  assert.deepEqual(list.map((s) => s.insert), ["!1 ", "!2 ", "!3 ", ""]);
+  assert.deepEqual(
+    list.map((suggestion) => {
+      if (!("insert" in suggestion)) throw new Error("Expected an insert suggestion");
+      return suggestion.insert;
+    }),
+    ["!1 ", "!2 ", "!3 ", ""],
+  );
 });
 
 test("due suggestions from a fixed Tuesday", () => {
@@ -29,10 +37,18 @@ test("due suggestions from a fixed Tuesday", () => {
   assert.deepEqual(list.map((s) => s.label), [
     "Today", "Tomorrow", "Thursday", "Friday", "Saturday", "1 week", "No due date", "Calendar picker",
   ]);
-  assert.equal(list[0].hint, "Oct 20");
-  assert.equal(list[2].insert, "^thursday ");
-  assert.equal(list[5].insert, "^2026-10-27 ");
-  assert.equal(list[7].pick, "date");
+  const todaySuggestion = list[0];
+  if (!todaySuggestion || !("hint" in todaySuggestion)) throw new Error("Expected a hint suggestion");
+  assert.equal(todaySuggestion.hint, "Oct 20");
+  const thursdaySuggestion = list[2];
+  if (!thursdaySuggestion || !("insert" in thursdaySuggestion)) throw new Error("Expected an insert suggestion");
+  assert.equal(thursdaySuggestion.insert, "^thursday ");
+  const weekSuggestion = list[5];
+  if (!weekSuggestion || !("insert" in weekSuggestion)) throw new Error("Expected an insert suggestion");
+  assert.equal(weekSuggestion.insert, "^2026-10-27 ");
+  const pickerSuggestion = list[7];
+  if (!pickerSuggestion || !("pick" in pickerSuggestion)) throw new Error("Expected a picker suggestion");
+  assert.equal(pickerSuggestion.pick, "date");
   assert.equal(isoDate(new Date(2026, 0, 5)), "2026-01-05");
 });
 

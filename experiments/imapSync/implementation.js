@@ -7,12 +7,15 @@ var imapSync = class extends ExtensionCommon.ExtensionAPI {
   getAPI() {
     return {
       imapSync: {
+        /** @returns {Promise<void>} */
         syncFolder(folderId) {
           const { folder } = getFolder(folderId);
           if (!(folder instanceof Ci.nsIMsgImapMailFolder)) return Promise.resolve(); // local folders are always current
-          return new Promise((resolve) =>
+          /** @type {Promise<void>} */
+          const syncPromise = new Promise((resolve) =>
             folder.updateFolderWithListener(null, { OnStartRunningUrl() {}, OnStopRunningUrl: () => resolve() }),
           );
+          return syncPromise;
         },
       },
     };

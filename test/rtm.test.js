@@ -15,7 +15,9 @@ test("sign matches the RTM documentation example", () => {
   assert.equal(sign({ yxz: "foo", feg: "bar", abc: "baz" }, "BANANAS"), "82044aae4dd676094f23f1ec152159ba");
 });
 
+/** @param {(params: Record<string, string>) => object} handler */
 const fakeFetch = (handler) => {
+  /** @type {Array<Record<string, string>>} */
   const calls = [];
   const fetch = async (url) => {
     const params = Object.fromEntries(new URL(url).searchParams);
@@ -82,7 +84,9 @@ test("addTask handles array-shaped taskseries/task", async () => {
   assert.deepEqual(result, { name: "x" });
 });
 
+/** @param {Record<string, unknown>} initial */
 const memoryStorage = (initial = {}) => {
+  /** @type {Record<string, unknown>} */
   const data = { ...initial };
   return { data, get: async (key) => ({ [key]: data[key] }), set: async (patch) => Object.assign(data, patch) };
 };
