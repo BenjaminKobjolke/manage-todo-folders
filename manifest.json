@@ -1,8 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Manage ToDo Folders",
+  "default_locale": "en_US",
   "version": "0.1.0",
   "description": "Move selected mail into the next free numbered todo folder and copy its tag.",
+  "externally_connectable": {
+    "ids": ["move-and-jump@bovender.de"]
+  },
   "author": "Benjamin Kobjolke",
   "browser_specific_settings": {
     "gecko": {

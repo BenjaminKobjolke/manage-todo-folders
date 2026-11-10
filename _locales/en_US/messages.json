@@ -1,0 +1,22 @@
+{
+  "deleteEmptyTodoFoldersMenu": {
+    "message": "Delete empty ToDo folders",
+    "description": "Folder pane context menu action that permanently deletes empty numbered ToDo folders."
+  },
+  "baseTodoFolderMissing": {
+    "message": "Set the base todo folder in the add-on options first.",
+    "description": "Shown when no base ToDo folder has been selected."
+  },
+  "deleteEmptyTodoFoldersError": {
+    "message": "Could not delete empty ToDo folders: $1",
+    "description": "Shown when deleting empty numbered ToDo folders fails."
+  },
+  "deletedEmptyTodoFolders": {
+    "message": "Deleted $1 empty ToDo folder(s).",
+    "description": "Shown after empty numbered ToDo folders are permanently deleted."
+  },
+  "noEmptyTodoFolders": {
+    "message": "No empty ToDo folders.",
+    "description": "Shown when there are no empty numbered ToDo folders to delete."
+  }
+}

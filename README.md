@@ -8,6 +8,15 @@ Thunderbird add-on (128+). Right-click selected mail → **Create ToDo**:
 4. Creates (or renames) the folder `010 - Rechnung bezahlen` and moves the selected messages there.
 5. Copies `<tag prefix><number>` (e.g. `#bk_todo_010`) to the clipboard and shows an alert popup.
 
+Right-click the folder pane → **Delete empty ToDo folders** to permanently remove empty numbered
+folders under the configured base folder. A folder is removed only after its sync succeeds, both
+message counts are zero, and it has no subfolders; nothing is moved to Trash.
+
+Move and Jump can call this action with `messenger.runtime.sendMessage("manage-todo-folders@kobjolke.de", { type: "delete-empty-todo-folders" })`.
+It returns `{ ok: true, deleted: string[] }` or `{ ok: false, error: string, deleted?: string[] }`.
+Send `{ type: "ping" }` to check availability; this add-on accepts external messages only from
+`move-and-jump@bovender.de`.
+
 ## Setup
 
 Add-on options: pick the email account, filter and click the base todo folder (e.g. `@BKToDo`), set the tag prefix (e.g. `#bk_todo_`). For RTM enter API key and shared secret, click **Connect**, authorise in the browser, click **Finish connection**, pick the target list (default Inbox). See `docs/SETTINGS.md`.
@@ -18,7 +27,7 @@ The add-on bundles a small WebExtension Experiment (`experiments/imapSync`) to s
 
 ## Docs
 
-- `docs/CREATE_TODO.md` – how the context menu action picks/creates the folder.
+- `docs/CREATE_TODO.md` – how the context menu action picks/creates the folder and removes empty folders.
 - `docs/SETTINGS.md` – options page and storage schema.
 - `docs/RTM.md` – Remember The Milk auth, signing and task creation.
 

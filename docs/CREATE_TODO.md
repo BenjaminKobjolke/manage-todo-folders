@@ -13,8 +13,8 @@ Context menu entry on the message list. Asks for a task name, creates a Remember
    - **Refresh tags** re-downloads the tag list (see `docs/RTM.md`, tag cache). The selected message ids travel in the prompt's query string and come back with the name via `runtime.sendMessage`, so the background page keeps no state.
 3. The add-on reads the options from storage. No base folder set → alert "Set the base todo folder in the add-on options first."
 4. Direct subfolders of the base folder named `NNN` or `NNN - anything` are collected and sorted by number.
-5. Each IMAP folder is synced from the server first (`messenger.imapSync.syncFolder`, max 10 s per folder), then checked for emptiness: its count is the larger of `messenger.messages.list` length and `folders.getFolderInfo().totalMessageCount`. The first folder with count 0 is reused.
-6. No empty folder → the next number is `max + 1`, zero-padded (`001…009` all full → `010`).
+5. Each IMAP folder is synced from the server first (`messenger.imapSync.syncFolder`, max 10 s per folder), then checked for emptiness: its count is the larger of `messenger.messages.list` length and `folders.getFolderInfo().totalMessageCount`. The first folder with count 0, a successful sync, and no subfolders is reused.
+6. No empty folder → use the lowest positive number not already in use, zero-padded. For example, with `001`, `002` and `004` full, the next folder is `003`; with none, it is `001`.
 7. If RTM is connected (see `docs/RTM.md`): the task is created in the target list with Smart Add parsing and tagged `<prefix without #><NNN>` (`bk_todo_013`). RTM returns the clean name (`Rechnung bezahlen`). An RTM error aborts here, nothing is moved. Not connected → the raw input is used as the name and no task is created.
 8. Folder name = `NNN - <clean name>` (`013 - Rechnung bezahlen`, `\ / :` replaced by `-`). A new folder is created, or the reused empty folder is renamed (`005 - old task` → `005 - Rechnung bezahlen`; its number and tag stay `005`).
 9. All selected messages are moved into that folder in one call.
@@ -23,12 +23,30 @@ Context menu entry on the message list. Asks for a task name, creates a Remember
 
 Errors are logged to the add-on console with the prefix `Manage ToDo Folders:` and shown in the same alert popup.
 
+## Delete empty ToDo folders
+
+Right-click the folder pane and choose **Delete empty ToDo folders**. The action considers direct
+subfolders matching `NNN` or `NNN - anything`. A folder is eligible only when its sync completed
+within 10 seconds, both message counts are zero, and it has no subfolders. A sync timeout or any
+count above zero keeps the folder. Eligible IMAP folders are deleted directly on the server and
+removed locally after the server confirms success; local folders are removed locally. This action
+permanently deletes folders and does not use Trash.
+
+The add-on also accepts external messages from Move and Jump (`move-and-jump@bovender.de`):
+
+- `{ type: "ping" }` replies `{ ok: true }`.
+- `{ type: "delete-empty-todo-folders" }` replies `{ ok: true, deleted: string[] }` or
+  `{ ok: false, error: string, deleted?: string[] }`.
+
+Unknown message types and messages from other add-ons are ignored. The caller should ping when
+listing or running the command, since the add-on may be installed or enabled later.
+
 ## Notes and gotchas
 
 - **IMAP folders are synced before counting (WebExtension Experiment).** `messages.list` and `getFolderInfo` both read Thunderbird's local message DB. For an IMAP folder that was filled (by an earlier move, a rename, or another device) and never opened here, that DB is empty. Both read 0, so a full folder like `009 - TÜV` was reused and got a second todo's mail (log: `009 - TÜV=0/0`).
   - Thunderbird only syncs a folder when it is selected. The WebExtension API has no sync call: `messages.query({online})` is NNTP only, and `mailTabs.update` would hijack the user's tab.
   - `experiments/imapSync` calls the same core method that selecting a folder runs, `nsIMsgImapMailFolder.updateFolderWithListener`. It downloads the headers into the local DB, so `messages.list` is correct afterwards. Non-IMAP folders are skipped.
-  - Each sync is capped at 10 s. On timeout, the (possibly stale) local counts are used.
+  - Each sync is capped at 10 s. On timeout, the (possibly stale) local counts are still used to avoid reusing a folder, but the folder is not treated as empty.
   - The larger of the list and info counts is still taken as a second guard: `getFolderInfo().totalMessageCount` can be stale or `undefined` (undefined falls back to the list count).
   - The Experiment runs with full privileges. Thunderbird's install prompt warns about this. It imports the internal `resource:///modules/ExtensionAccounts.sys.mjs` (`getFolder(folderId)`), which may change in a major Thunderbird update.
 - Every run logs one line with all subfolders and both counts (`listed/info`), useful when the wrong folder is picked:
@@ -46,8 +64,9 @@ Errors are logged to the add-on console with the prefix `Manage ToDo Folders:` a
 
 - `background.js` – menu registration, prompt, RTM task, folder create/rename, move, clipboard, alert.
 - `lib/todo.js` – `pickTodoFolder(subfolders)`: picks an existing empty numbered folder or the next number; `folderName(number, taskName)`.
+- `lib/todo.js` – `emptyTodoFolders(subfolders)`: selects synced, empty numbered folders with no children.
 - `lib/rtm.js` – RTM client, see `docs/RTM.md`.
-- `experiments/imapSync/implementation.js`, `schema.json` – Experiment `imapSync.syncFolder(folderId)`, registered under `experiment_apis` in `manifest.json`.
+- `experiments/imapSync/implementation.js`, `schema.json` – Experiment methods `imapSync.syncFolder(folderId)` and `imapSync.deleteFolder(folderId)`, registered under `experiment_apis` in `manifest.json`.
 - `test/todo.test.js` – unit tests for `pickTodoFolder` and `folderName`.
 - `prompt/prompt.html`, `prompt/prompt.js` – task name prompt with autocomplete.
 - `lib/smartAdd.js`, `test/smartAdd.test.js` – token detection and suggestions for `#`, `!`, `^`.
